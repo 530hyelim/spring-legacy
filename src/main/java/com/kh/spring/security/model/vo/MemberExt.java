@@ -32,6 +32,8 @@ public class MemberExt extends Member implements UserDetails{
     * getPassword / getUsername 
     *  - 스프링 시큐리티에서 비밀번호/아이디를 가져올 때 사용하는 메서드
     *  - id역할의 필드와 pwd역할의 필드가 username,password가 아니라면 오버라이딩 해줘야 함.
+    * Member 클래스에서 @Data로 생성되는 메서드명이 getUserId()랑 getUserPwd()이기 때문에
+    * UserDetails에서 구현해야 하는 메서드명이랑 달라서 오버라이딩 해주어야 함
     */
    @Override
    public String getPassword() {

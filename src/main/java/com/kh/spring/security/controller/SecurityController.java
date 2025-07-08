@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.springframework.beans.propertyeditors.CustomDateEditor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -49,8 +50,15 @@ public class SecurityController {
    @GetMapping("/security/insert")
    public String enroll(@ModelAttribute Member member) {
       // ModelAttribute
-      // - 커맨드객체 바인딩시 사용
-      // - model영역에 커맨드객체를 저장하는 기능
+      // - 커맨드객체 바인딩시 사용 (요청 파라미터를 바인딩해서 객체에 넣어주고)
+	  //  - 커맨드 객체?
+	  //    클라이언트가 보낸 요청 파라미터(form 데이터 등)을 스프링이 자동으로 바인딩해주는 일반 자바객체(POJO)
+	  //    요청 파라미터 이름과 객체 필드명이 일치하면 자동으로 값이 들어감
+      // - model영역에 커맨드객체를 저장하는 기능 (그 객체를 Model에 자동등록 해주는 어노테이션)
+	  //  - Model 객체?
+	  //    컨트롤러에서 뷰로 데이터를 넘길 때 사용하는 객체
+	  //    model.addAttribute("이름", 객체) => 뷰에서 ${이름.필드}로 접근 가능
+	  // - 언제 씀? 명시적으로 바인딩 대상 객체를 표시하고 싶을 때, 뷰에서 해당 객체를 사용해야 할 때
       return "member/memberEnrollForm";
    }
    
@@ -78,6 +86,8 @@ public class SecurityController {
    
    @PostMapping("/security/insert")
    public String register(
+		 // @Validated? 유효성 검사 트리거
+		 // !!중요!! 반드시 뒤에 BindingResult가 있어야 함!
          @Validated @ModelAttribute Member member,
          /*
           * BindingResult
@@ -125,6 +135,33 @@ public class SecurityController {
 	   log.info("principal2 = {}", principal2);
 	   
 	   return "member/myPage";
+   }
+   
+   @PostMapping("/security/update")
+   public String update(
+		   @Validated @ModelAttribute MemberExt loginUser,
+		   BindingResult bindResult, // 규칙상 반드시 우측에 유효성검사 결과 담을 객체
+		   Authentication auth, // argument resolver 방식으로 로그인한 사용자 인증정보 가져오기
+		   RedirectAttributes ra
+		   ) {
+	   if(bindResult.hasErrors()) {
+		   // 현재는 userId에 대한 유효성 검사하는 코드가 없으므로 모두 통과할 것
+		   return "redirect:/security/myPage";
+	   }
+	   // 비즈니스 로직
+	   // 1. db의 member 객체를 수정
+	   int result = mService.updateMember(loginUser);
+	   // 2. 변경된 회원정보를 db에서 얻어온 후 새로운 인증정보를 생성하여 스레드로컬에 저장
+	   // 로그아웃하고 재로그인하면 새로운 인증정보 생성됨. 로그아웃 없이 서비스 이용하게 하려면?
+	   //  - 변경된 회원정보(loginUser) => principal은 이미 얻어왔고
+	   //  - authorities, credentials 필요 => 인증 토큰에 필요함
+	   
+	   // 새로운 authentication 객체 생성
+	   Authentication newAuth = new UsernamePasswordAuthenticationToken(
+			   loginUser, auth.getCredentials(), auth.getAuthorities());
+	   SecurityContextHolder.getContext().setAuthentication(newAuth);
+	   ra.addFlashAttribute("alertMsg","내 정보 수정 성공");
+	   return "redirect:/security/myPage";
    }
 }
 
