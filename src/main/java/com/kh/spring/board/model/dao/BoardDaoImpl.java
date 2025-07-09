@@ -4,7 +4,6 @@ package com.kh.spring.board.model.dao;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.ibatis.session.RowBounds;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -15,7 +14,9 @@ import com.kh.spring.board.model.vo.BoardType;
 import com.kh.spring.common.model.vo.PageInfo;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j // field log 보이지않지만 생성됨
 @Repository // 빈객체로 등록
 @RequiredArgsConstructor
 public class BoardDaoImpl implements BoardDao{
@@ -99,7 +100,10 @@ public class BoardDaoImpl implements BoardDao{
 
 	@Override
 	public int insertBoard(Board b) {
-		return 0;
+		log.debug("게시글 등록 이전 b : {}", b);
+		int result = session.insert("board.insertBoard", b);
+		log.debug("게시글 등록 이후 b : {}", b);
+		return result;
 	}
 
 	@Override
@@ -109,17 +113,17 @@ public class BoardDaoImpl implements BoardDao{
 
 	@Override
 	public int insertBoardImgList(List<BoardImg> imgList) {
-		return 0;
+		return session.insert("board.insertBoardImgList", imgList);
 	}
 
 	@Override
 	public BoardExt selectBoard(int boardNo) {
-		return null;
+		return session.selectOne("board.selectBoard", boardNo);
 	}
 
 	@Override
 	public int increaseCount(int boardNo) {
-		return 0;
+		return session.update("board.increaseCount", boardNo);
 	}
 
 	@Override

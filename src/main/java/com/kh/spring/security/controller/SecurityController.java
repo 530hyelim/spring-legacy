@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.kh.spring.member.model.service.MemberService;
@@ -40,7 +41,9 @@ public class SecurityController {
    }
    
    // 에러페이지 포워딩용 url
-   @GetMapping("/security/accessDenied")
+   // accessDenyHandler에 의해 호출됨
+   // requestMapping? get/post 안가리고 다 받겠다
+   @RequestMapping("/security/accessDenied")
    public String accessDenied(Model model) {
       model.addAttribute("errorMsg","접근 불가");
       return "common/errorPage";
