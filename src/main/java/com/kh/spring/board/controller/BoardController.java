@@ -357,4 +357,213 @@ public class BoardController {
 		// 브라우저 내부 설정이나 정책을 변경하는건 불가능하고, 대신 브라우저가 이 응답을 처리할 때 어떻게 행동할지를 제안하는 역할
 	}
 	
+	//실습문제 1. 일반게시판 수정페이지로 이동
+	//BoardController에 다음 메서드를 추가 후 , 주석으로 기술한 업무로직에 맞춰서 코드를 구현
+	@GetMapping("/update/{boardCode}/{boardNo}")
+	public String updateBoard(
+		    @PathVariable(value = "boardCode") String boardCode,
+		    @PathVariable("boardNo") int boardNo,
+		    Authentication authentication,
+		    Model model) {
+		// 다음 업무로직의 순서에 맞춰 코드를 작성
+		// 1. 현재 게시글을 수정할 수 있는 사용자인지 체크.
+		// url 입력으로 바로 이동할수 있으니까 프론트랑 벡엔드에서 둘 다 체크해야함
+		//		- 게시글의 작성자 == 로그인한 사용자
+		//		- 관리자 권한
+		BoardExt board = boardService.selectBoard(boardNo);
+		if (board == null) {
+			throw new RuntimeException("게시글이 존재하지 않습니다");
+		}
+//		int boardWriter = Integer.parseInt(board.getBoardWriter());
+//		int userNo = ((Member) authentication.getPrincipal()).getUserNo();
+//		if (!(boardWriter == userNo || (authentication.getAuthorities().stream()
+//				.anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"))))) {
+//			throw new RuntimeException("게시글을 수정할 수 있는 권한이 없습니다");
+//		} ============> 인터셉터 모듈로 관리해서 재사용성 증가
+		
+		// 2. 게시글 정보 조회(BoardExt)
+		//	    - 게시글 CONTENT에 대해서 newLineClear메서드를 통해 개행문자 원복
+		board.setBoardContent(Utils.newLineClear(board.getBoardContent())); // <br> -> \n
+		// 3. model영역에 게시글정보 추가하여 forward
+		model.addAttribute("board", board);
+		return "board/boardUpdateForm";
+	}
+	
+	/*
+	@PostMapping("/update/{boardCode}/{boardNo}")
+	public String updateBoard2(
+            @ModelAttribute Board board,
+            @PathVariable("boardCode") String boardCode,
+            @PathVariable("boardNo") int boardNo,
+            Authentication authentication,
+            RedirectAttributes ra,
+            Model model,
+            @RequestParam(value = "upfile", required = false) List<MultipartFile> upfiles,
+            String deleteList , // boardImgNo
+            @RequestParam(value = "imgNo", required = false) List<Integer> imgNoList
+			) {
+		// 다음 업무로직의 순서에 맞춰 코드를 작성
+        // 0. 유효성검사(생략)
+        // 1. 현재 게시글을 수정할 수 있는 사용자인지 체크.
+        // 2. 새롭게 등록한 첨부파일이 있는지 체크 후 저장
+		log.debug("board : {}", board);
+		log.debug("deleteList : {}", deleteList); // 6
+		log.debug("upfiles : {}", upfiles);
+		log.debug("imgNoList : {}", imgNoList); // [3, 4, 5, 0]
+		
+		List<BoardImg> imgList = new ArrayList<>();
+		int level = 0;
+		for (MultipartFile upfile : upfiles) {
+			if(upfile.isEmpty()) {
+				continue;
+			}
+			String changeName = Utils.saveFile(upfile, application, boardCode);
+			BoardImg bi = new BoardImg();
+			bi.setChangeName(changeName);
+			bi.setOriginName(upfile.getOriginalFilename());
+			bi.setImgLevel(level++);
+			bi.setRefBno(boardNo);
+			imgList.add(bi);
+		}
+		
+        // 3. 게시글 , 첨부파일 수정 서비스 요청
+        //    1) UPDATE에 필요한 데이터를 추가로 바인딩
+		BoardExt b = boardService.selectBoard(boardNo);
+		if (b == null) {
+			throw new RuntimeException("게시글이 존재하지 않습니다");
+		}
+		b.setBoardTitle(board.getBoardTitle());
+		b.setBoardContent(board.getBoardContent());
+		
+        //    서비스 내부 로직
+        //    1. 게시글 수정
+        //       1) XSS, 개행 처리 후 추가
+        //    2. 첨부파일 수정 -> INSERT, UPDATE, DELETE
+        //       1) 새롭게 등록한 첨부파일이 없는 경우 -> 아무것도 하지 않음
+		
+		//deleteList : 
+		//upfiles : [MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0]]
+		//imgNoList : [7, 8, 9, 10]
+		
+        //       2) 첨부파일이 없던 게시글에 새롭게 추가한 경우 -> INSERT
+		
+		//deleteList : 
+		//upfiles : [MultipartFile[field="upfile", filename=home.png, contentType=image/png, size=10177], MultipartFile[field="upfile", filename=home.png, contentType=image/png, size=10177], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0]]
+		//imgNoList : [0, 0, 0, 0]
+		
+        //       3) 첨부파일이 있던 게시글에 새롭게 추가한 경우 -> UPDATE
+		
+		//deleteList : 7,8,9,10,7,8
+		//upfiles : [MultipartFile[field="upfile", filename=2025062514423135_0.jpg, contentType=image/jpeg, size=66015], MultipartFile[field="upfile", filename=2025062514423135_0.jpg, contentType=image/jpeg, size=66015], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0]]
+		//imgNoList : [0, 0, 0, 0]
+		
+        //       4) 첨부파일이 있던 게시글에 첨부파일은 삭제한 경우 -> DELETE
+        //        - 사용하지 않게 된 첨부파일에 대해서는 고려하지 않아도 상관 없음.(스케쥴러를 통해 정리예정)
+		
+		//deleteList : 7,8,9,10
+		//upfiles : [MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0], MultipartFile[field="upfile", filename=, contentType=application/octet-stream, size=0]]
+		//imgNoList : [0, 0, 0, 0]
+		
+		int result = 0;
+		if (deleteList.equals("")) {
+			// 2
+			result = boardService.insertBoard(b, imgList);
+		} else {
+			for (MultipartFile upfile : upfiles) {
+				try {
+					result = boardService.updateBoard(b, deleteList, upfile, imgList);
+				} catch (Exception e) {
+					throw new RuntimeException("게시글 수정 실패");
+				}
+			}
+		}
+		
+        // 3. 처리 결과에 따라 응답 페이지 지정
+        //    1) 실패시 에러반환
+        //    2) 성공시 작업했떤 view페이지로 redirect
+		if (result == 0) {
+			throw new RuntimeException("게시글 수정 실패");
+		}
+		ra.addFlashAttribute("alertMsg","게시글 수정 성공");
+		return "redirect:/board/detail/" + boardCode + "/" + boardNo;
+	}
+	*/
+	
+	@PostMapping("/update/{boardCode}/{boardNo}")
+	public String updateBoard2(
+            @ModelAttribute Board board,
+            @PathVariable("boardCode") String boardCode,
+            @PathVariable("boardNo") int boardNo,
+            Authentication authentication,
+            RedirectAttributes ra,
+            Model model,
+            @RequestParam(value = "upfile", required = false) List<MultipartFile> upfiles,
+            String deleteList , // boardImgNo
+            @RequestParam(value = "imgNo", required = false) List<Integer> imgNoList
+			) {
+		// 다음 업무로직의 순서에 맞춰 코드를 작성
+        // 0. 유효성검사(생략)
+        // 1. 현재 게시글을 수정할 수 있는 사용자인지 체크.
+        // 2. 새롭게 등록한 첨부파일이 있는지 체크 후 저장
+		List<BoardImg> imgList = new ArrayList<>();
+//		for (int i = 0, j = 0; i < imgNoList.size(); i++) {
+//			if (j >= upfiles.size()) { // upfiles로 꺼낼 값이 없는 경우
+//				break;
+//			}
+//			MultipartFile upfile = upfiles.get(j++);
+//			if (upfile.isEmpty()) {
+//				continue;
+//			}
+//			String changeName = Utils.saveFile(upfile, application, boardCode);
+//			BoardImg bi = new BoardImg();
+//			bi.setBoardImgNo(imgNoList.get(i)); // 현재레벨에 맞는 imgNo
+//			bi.setChangeName(changeName);
+//			bi.setOriginName(upfile.getOriginalFilename());
+//			bi.setImgLevel(i);
+//			bi.setRefBno(boardNo); // 게시글 번호 추가
+//			imgList.add(bi);
+//		}
+		
+		
+		int level = 0;
+		for (MultipartFile upfile : upfiles) {
+			if(upfile.isEmpty()) {
+				continue;
+			}
+			String changeName = Utils.saveFile(upfile, application, boardCode);
+			BoardImg bi = new BoardImg();
+			bi.setBoardImgNo(imgNoList.get(level)); // update, delete 시에는 pk값이 필요함
+			bi.setChangeName(changeName);
+			bi.setOriginName(upfile.getOriginalFilename());
+			bi.setImgLevel(level++);
+			bi.setRefBno(boardNo); // 게시글 번호 추가
+			imgList.add(bi);
+		}
+		
+		board.setBoardNo(boardNo);
+		board.setBoardCd(boardCode);
+		
+        // 3. 게시글 , 첨부파일 수정 서비스 요청
+        //    1) UPDATE에 필요한 데이터를 추가로 바인딩
+		int result = boardService.updateBoard(board, deleteList, imgList);
+		
+        //    서비스 내부 로직
+        //    1. 게시글 수정
+        //       1) XSS, 개행 처리 후 추가
+        //    2. 첨부파일 수정 -> INSERT, UPDATE, DELETE
+        //       1) 새롭게 등록한 첨부파일이 없는 경우 -> 아무것도 하지 않음
+        //       2) 첨부파일이 없던 게시글에 새롭게 추가한 경우 -> INSERT
+        //       3) 첨부파일이 있던 게시글에 새롭게 추가한 경우 -> UPDATE
+        //       4) 첨부파일이 있던 게시글에 첨부파일은 삭제한 경우 -> DELETE
+        //        - 사용하지 않게 된 첨부파일에 대해서는 고려하지 않아도 상관 없음.(스케쥴러를 통해 정리예정)
+		
+        // 3. 처리 결과에 따라 응답 페이지 지정
+        //    1) 실패시 에러반환
+        //    2) 성공시 작업했떤 view페이지로 redirect
+		if (result == 0) {
+			throw new RuntimeException("게시글 수정 실패");
+		}
+		ra.addFlashAttribute("alertMsg","게시글 수정 성공");
+		return "redirect:/board/detail/" + boardCode + "/" + boardNo;
+	}
 }

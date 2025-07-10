@@ -25,12 +25,14 @@ public interface BoardService {
 
 	List<BoardImg> selectBoardImgList(int boardNo);
 
-	int updateBoard(Board board, String deleteList, MultipartFile upfile, List<MultipartFile> upfiles) throws Exception;
+	int updateBoard(Board board, String deleteList, MultipartFile upfile, List<BoardImg> imgList) throws Exception;
 
 	List<String> selectFileList();
 
 	List<BoardType> selectBoardTypeList();
 
 	Map<String, String> getBoardTypeMap();
+
+	int updateBoard(Board board, String deleteList, List<BoardImg> imgList);
 
 }
