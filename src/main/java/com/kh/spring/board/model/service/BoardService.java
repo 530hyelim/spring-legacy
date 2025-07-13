@@ -35,4 +35,6 @@ public interface BoardService {
 
 	int updateBoard(Board board, String deleteList, List<BoardImg> imgList);
 
+	BoardImg getBoardImg(String string);
+
 }

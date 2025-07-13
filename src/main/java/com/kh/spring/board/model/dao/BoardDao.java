@@ -39,4 +39,6 @@ public interface BoardDao {
 
 	Map<String, String> getBoardTypeMap();
 
+	BoardImg getBoardImg(String changeName);
+
 }

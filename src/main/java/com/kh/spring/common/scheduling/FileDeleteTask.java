@@ -1,12 +1,22 @@
 package com.kh.spring.common.scheduling;
 
+import java.io.File;
+import java.util.Map;
+
+import javax.servlet.ServletContext;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.kh.spring.board.model.service.BoardService;
+import com.kh.spring.board.model.vo.BoardImg;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class FileDeleteTask {
 	/*
      * 파일 삭제 스케쥴러
@@ -19,8 +29,28 @@ public class FileDeleteTask {
      * 5. DB에 없는 파일(즉, 더 이상 사용되지 않는 파일)이라면 삭제 처리
      * 6. 유저활동량이 적은 매달 1일 4시에 실행되도록 설정
      */
-	@Scheduled(cron = "0 0 4 1 * ?")
+	private final BoardService boardService;
+	private final ServletContext application; 
+	
+//	@Scheduled(cron = "0 0 4 1 * ?")
+	@Scheduled(fixedRate = 5000)
 	public void fileDelete() {
-		
+		Map<String, String> boardTypeMap = boardService.getBoardTypeMap();
+		for(String boardCd : boardTypeMap.keySet()) {
+			String realPath = application.getRealPath("/resources/images/board/"+boardCd);
+			File file = new File(realPath);
+			
+			if (file.exists()) {
+				File[] images = file.listFiles();
+				if (images != null) {
+					for (File img : images) {
+						BoardImg bi = boardService.getBoardImg("/resources/images/board/"+boardCd+"/"+img.getName());
+						if (bi == null) {
+							img.delete();
+						}
+					}
+				}
+			}
+		}
 	}
 }

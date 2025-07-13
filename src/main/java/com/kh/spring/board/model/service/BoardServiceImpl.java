@@ -180,5 +180,10 @@ public class BoardServiceImpl implements BoardService {
 
 		return null;
 	}
+
+	@Override
+	public BoardImg getBoardImg(String changeName) {
+		return boardDao.getBoardImg(changeName);
+	}
 	
 }

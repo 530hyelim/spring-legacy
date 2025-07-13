@@ -150,4 +150,9 @@ public class BoardDaoImpl implements BoardDao{
 	public List<String> selectFileList() {
 		return null;
 	}
+
+	@Override
+	public BoardImg getBoardImg(String changeName) {
+		return session.selectOne("board.getBoardImg", changeName);
+	}
 }
