@@ -40,16 +40,16 @@ public class ChatDao {
 		return session.insert("chat.insertMessage", chatMessage);
 	}
 
-	public int exitChatRoom(ChatRoomJoin join) {
-		return 0;
+	public int exitChatRoom(ChatMessage chatMessage) {
+		return session.delete("chat.exitChatRoom", chatMessage);
 	}
 
-	public int countChatRoomMember(ChatRoomJoin join) {
-		return 0;
+	public int countChatRoomMember(ChatMessage chatMessage) {
+		return session.selectOne("chat.countChatRoomMember", chatMessage);
 	}
 
-	public int closeChatRoom(ChatRoomJoin join) {
-		return 0;
+	public int closeChatRoom(ChatMessage chatMessage) {
+		return session.update("chat.closeChatRoom", chatMessage);
 	}
 
 }

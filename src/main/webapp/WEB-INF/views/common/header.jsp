@@ -85,6 +85,23 @@ height:80%; position:absolute; margin:auto; top:0px; bottom:0px; right:0px; left
 </style>
 </head>
 <body>
+
+<!-- chatRoom.jsp에서 두번 import? 어차피 캐시메모리에 있어서 그렇지 않음 -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script>
+	$(function() {
+		const stompClient2 = Stomp.over(new SockJS("${contextPath}/stomp"));
+		stompClient2.connect({}, function() { // 메서드 프레임 connected로 전달받지만 사용할일없어서 매개변수 안받음
+		    stompClient2.subscribe("/topic/notice", function(message) {
+		        //const chatMessage = JSON.parse(message.body);
+		        //alertify.alert(chatMessage.alertMsg);
+		        alertify.alert(message.body); // JSON이 아니라 단순 텍스트 형태로 데이터 보낼 것
+		    });
+		});
+	});
+</script>
+
 <c:if test="${not empty alertMsg}">
 	<script>
 		alertify.alert("서비스 요청 성공", "${alertMsg}");
