@@ -171,14 +171,12 @@ public class BoardServiceImpl implements BoardService {
 
 	@Override
 	public List<String> selectFileList() {
-
-		return null;
+		return boardDao.selectFileList();
 	}
 
 	@Override
 	public List<BoardType> selectBoardTypeList() {
-
-		return null;
+		return boardDao.selectBoardTypeList();
 	}
 
 	@Override

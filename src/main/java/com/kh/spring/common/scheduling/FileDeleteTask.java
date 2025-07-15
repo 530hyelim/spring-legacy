@@ -1,6 +1,8 @@
 package com.kh.spring.common.scheduling;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletContext;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.kh.spring.board.model.service.BoardService;
 import com.kh.spring.board.model.vo.BoardImg;
+import com.kh.spring.board.model.vo.BoardType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +50,36 @@ public class FileDeleteTask {
 						BoardImg bi = boardService.getBoardImg("/resources/images/board/"+boardCd+"/"+img.getName());
 						if (bi == null) {
 							img.delete();
+						}
+					}
+				}
+			}
+		}
+	}
+	
+//	@Scheduled(cron = "0 0 4 1 * ?")
+	@Scheduled(fixedRate = 5000)
+	public void deleteFile() {
+		// 1. 데이터베이스 안의 모든 파일목록 조회
+		List <String> list = boardService.selectFileList();
+		
+		// 2. 모든 게시판 유형의 디렉토리 경로 탐색
+		List <BoardType> typeList = boardService.selectBoardTypeList();
+		for (BoardType type : typeList) {
+			File path = new File(application.getRealPath("/resources/images/board/")+type.getBoardCd());
+			if (!path.exists()) {
+				continue;
+			}
+			File[] files = path.listFiles();
+			List<File> fileList = Arrays.asList(files);
+			if (!list.isEmpty()) {
+				if (!fileList.isEmpty()) {
+					for (File serverFile : fileList) {
+						String fileName = serverFile.getName();
+						fileName = "/resources/images/board/"+type.getBoardCd()+"/"+fileName;
+						if (list.indexOf(fileName) == -1) {
+							log.debug(fileName+" 삭제완료");
+							serverFile.delete();
 						}
 					}
 				}
